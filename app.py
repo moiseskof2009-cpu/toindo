@@ -6,8 +6,8 @@ import uuid
 app = Flask(__name__)
 CORS(app)
 
-# Guarda as corridas na memória
 corridas = []
+chats = {}
 
 @app.route('/')
 def home():
@@ -15,81 +15,74 @@ def home():
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toindo</title>
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#000000">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toindo - Várzea Grande</title>
 <style>
-*{font-family:'Inter',Arial,sans-serif}
-body{margin:0;background:#000;color:white;text-align:center}
-.header{background:#000;padding:25px 20px;border-bottom:3px solid #00FF88}
-.logo{font-size:36px;font-weight:800;letter-spacing:2px}
-.logo span{color:#00FF88}
-.sub{color:#aaa;font-size:14px;margin-top:5px}
-.card{background:white;color:black;margin:20px;padding:22px;border-radius:20px;box-shadow:0 10px 30px rgba(0,255,136,0.2)}
-input{width:92%;padding:16px;margin:8px 0;border:2px solid #eee;border-radius:12px;font-size:16px;background:#f9f9f9}
-.btn{background:#00FF88;color:black;border:none;padding:17px;border-radius:12px;font-size:17px;width:96%;font-weight:800;margin-top:12px}
-.btn2{background:#000;color:#00FF88;border:2px solid #00FF88}
-.status{display:none;margin-top:15px;padding:15px;background:#f0fff5;border-radius:12px;border:1px solid #00FF88}
-.pulse{width:14px;height:14px;background:#00FF88;border-radius:50%;display:inline-block;animation:pulse 1.5s infinite}
-@keyframes pulse{0%{transform:scale(0.9);opacity:1}50%{transform:scale(1.3);opacity:0.6}100%{transform:scale(0.9);opacity:1}}
+*{font-family:Arial,sans-serif;box-sizing:border-box}
+body{margin:0;background:#000;color:white}
+.header{background:#000;padding:22px;text-align:center;border-bottom:3px solid #00FF88}
+.logo{font-size:34px;font-weight:900}.logo span{color:#00FF88}
+.card{background:white;color:black;margin:14px;padding:18px;border-radius:18px}
+input{width:100%;padding:16px;margin:7px 0;border:2px solid #eee;border-radius:12px;font-size:16px;background:#f9f9f9}
+.btn{background:#00FF88;color:black;border:none;padding:16px;border-radius:12px;font-size:17px;width:100%;font-weight:900;margin-top:10px}
+.status{display:none;margin-top:12px;padding:14px;background:#f0fff5;border-radius:12px;border:2px solid #00FF88;text-align:left}
+.dot{width:10px;height:10px;background:#00FF88;border-radius:50%;display:inline-block;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:0.2}}
+.msg-c{background:#000;color:white;padding:8px 12px;border-radius:12px;margin:4px 0;display:inline-block;max-width:80%}
+.msg-m{background:#00FF88;color:black;padding:8px 12px;border-radius:12px;margin:4px 0;display:inline-block;max-width:80%}
 </style>
 </head>
 <body>
-<div class="header">
-<div class="logo">TO<span>INDO</span> 🚗</div>
-<div class="sub">Várzea Grande • Mais barato que Uber</div>
-</div>
+<div class="header"><div class="logo">TO<span>INDO</span> 🚗<br><small style="font-size:13px;color:#888">Várzea Grande - V3 Privada</small></div></div>
 
 <div class="card">
 <h3 style="margin:0 0 10px 0">Para onde vamos?</h3>
 <input id="nome" placeholder="👤 Seu nome">
-<input id="origem" placeholder="📍 De onde você está? Ex: Cohab São Simão">
-<input id="destino" placeholder="🏁 Para onde vai? Ex: Centro">
-<input id="zap" placeholder="📱 Seu WhatsApp">
+<input id="origem" placeholder="📍 Origem - Ex: São Simão">
+<input id="destino" placeholder="🏁 Destino - Ex: Aeroporto">
 <button class="btn" onclick="solicitar()">SOLICITAR CORRIDA AGORA</button>
-<div id="status" class="status">
-<div><span class="pulse"></span> <b id="stxt">Procurando motoristas perto de você...</b></div>
-<p id="sdet" style="font-size:13px;color:#555;margin-top:8px"></p>
-</div>
+<div id="status" class="status"></div>
 </div>
 
-<div class="card" style="background:#111;color:white;border:1px solid #222">
-<h4 style="margin:0">📲 Instalar App</h4>
-<p style="font-size:13px;color:#888">Use como App de verdade</p>
-<button class="btn btn2" onclick="instalar()">⬇️ INSTALAR TOINDO</button>
-<a href="/motorista" style="display:block;margin-top:15px;color:#00FF88;text-decoration:none;font-size:13px">👉 Sou motorista - Ver corridas</a>
+<div class="card" style="background:#111;color:white;border:1px solid #222;text-align:center">
+<a href="/motorista" style="color:#00FF88;text-decoration:none;font-weight:bold">👉 ENTRAR COMO MOTORISTA</a><br>
+<small style="color:#666">Motorista não vê seu número. Chat anônimo dentro do app.</small>
 </div>
 
 <script>
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e=>{e.preventDefault();deferredPrompt=e;});
-function instalar(){if(deferredPrompt)deferredPrompt.prompt();else alert('No topo clique nos 3 pontos ⋮ > Instalar app');}
-
+let meuId=null;
 async function solicitar(){
  const nome=document.getElementById('nome').value;
  const origem=document.getElementById('origem').value;
  const destino=document.getElementById('destino').value;
- const zap=document.getElementById('zap').value;
- if(!origem||!destino||!nome){alert('Preencha nome, origem e destino!');return;}
- document.getElementById('status').style.display='block';
- document.getElementById('stxt').innerText='Enviando solicitação...';
- document.getElementById('sdet').innerText=origem+' → '+destino;
- 
- const res = await fetch('/api/solicitar', {
-   method:'POST',
-   headers:{'Content-Type':'application/json'},
-   body:JSON.stringify({nome,origem,destino,zap})
- });
- const data = await res.json();
- if(data.ok){
-   document.getElementById('stxt').innerText='✅ Corrida solicitada! Motorista a caminho!';
-   document.getElementById('sdet').innerHTML='ID: '+data.id+'<br>Um motorista Toindo vai te chamar no WhatsApp: '+zap;
- }
+ if(!nome||!origem||!destino){alert('Preencha nome, origem e destino!');return;}
+ const r=await fetch('/api/solicitar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,origem,destino})});
+ const d=await r.json();
+ meuId=d.id;
+ const box=document.getElementById('status');
+ box.style.display='block';
+ box.innerHTML='<span class=dot></span> <b>Procurando motorista...</b><br><small>ID: #'+d.id.slice(0,5)+' - Seus dados estão protegidos (LGPD)</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem pro motorista" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+ setInterval(verStatus,3000);
 }
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}
+async function verStatus(){
+ if(!meuId) return;
+ const r=await fetch('/api/status/'+meuId); const c=await r.json(); if(!c) return;
+ loadChat();
+ if(c.status=='aceita') document.getElementById('status').innerHTML='<span class=dot></span> <b style=color:green>✅ MOTORISTA A CAMINHO!</b><br><small>'+c.origem+' → '+c.destino+'</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Fala com o motorista" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+ if(c.status=='chegou') document.getElementById('status').innerHTML='<b style=color:green>🚗 MOTORISTA CHEGOU NO LOCAL!</b><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+}
+async function enviar(){
+ const texto=document.getElementById('msg').value; if(!texto) return;
+ await fetch('/api/chat/'+meuId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({de:'cliente',texto})});
+ document.getElementById('msg').value=''; loadChat();
+}
+async function loadChat(){
+ if(!meuId) return;
+ const r=await fetch('/api/chat/'+meuId); const msgs=await r.json();
+ let h=''; msgs.forEach(m=>{h+='<div><span class='+(m.de=='cliente'?'msg-c':'msg-m')+'><b>'+m.de+':</b> '+m.texto+'</span></div>'});
+ const el=document.getElementById('chatArea'); if(el) el.innerHTML=h;
+}
+setInterval(loadChat,2000);
 </script>
 </body>
 </html>
@@ -98,98 +91,85 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js');}
 @app.route('/motorista')
 def motorista():
     return """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Motorista Toindo</title>
-<meta name="theme-color" content="#000000">
-<style>
-body{font-family:Arial;margin:0;background:#000;color:white}
-.header{background:#00FF88;color:black;padding:18px;text-align:center;font-weight:800;font-size:22px}
-.card{background:#1a1a1a;margin:12px;padding:16px;border-radius:14px;border-left:4px solid #00FF88}
-.btn{background:#00FF88;border:none;padding:12px 18px;border-radius:10px;font-weight:bold;margin:5px}
-small{color:#aaa}
-</style>
-</head>
-<body>
-<div class="header">🚗 PAINEL MOTORISTA - TOINDO</div>
-<div style="padding:10px;text-align:center"><button class="btn" onclick="load()">🔄 ATUALIZAR CORRIDAS</button>
-<a href="/" style="color:#00FF88;font-size:13px">Voltar para App Cliente</a></div>
-<div id="lista" style="padding:10px">Carregando...</div>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Motorista Toindo</title>
+<style>body{font-family:Arial;margin:0;background:#000;color:white}.header{background:#00FF88;color:black;padding:16px;text-align:center;font-weight:900}.card{background:#1a1a1a;margin:10px;padding:14px;border-radius:12px;border-left:4px solid #00FF88}.btn{background:#00FF88;border:none;padding:10px 14px;border-radius:8px;font-weight:900;margin:3px}input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px}</style></head>
+<body><div class="header">🚗 PAINEL MOTORISTA - TOINDO V3</div><div style="text-align:center;padding:10px"><button class=btn onclick="load()">🔄 ATUALIZAR CORRIDAS</button></div><div id="lista"></div>
 <script>
 async function load(){
- const r = await fetch('/api/corridas');
- const corridas = await r.json();
- const div = document.getElementById('lista');
- if(corridas.length==0){div.innerHTML='<p style="text-align:center;color:#666">Nenhuma corrida no momento. Aguarde...</p>';return;}
+ const r=await fetch('/api/corridas'); const cs=await r.json();
+ const div=document.getElementById('lista');
+ if(cs.length==0){div.innerHTML='<p style=text-align:center;color:#666>Nenhuma corrida no momento</p>';return;}
  div.innerHTML='';
- corridas.reverse().forEach(c=>{
-   div.innerHTML+=`<div class="card">
-   <b>👤 ${c.nome}</b> - ${c.zap}<br>
-   <small>📍 ${c.origem} → 🏁 ${c.destino}</small><br>
-   <small>⏰ ${c.hora} - ID ${c.id.slice(0,6)}</small><br>
-   <div style="margin-top:10px">
-   <button class="btn" onclick="window.open('https://wa.me/55${c.zap.replace(/[^0-9]/g,'')}?text=Olá ${c.nome}! Aqui é motorista Toindo, vi sua corrida de ${c.origem} para ${c.destino}. Estou a caminho!')">💬 CHAMAR NO ZAP</button>
-   <button class="btn" style="background:#333;color:white" onclick="aceitar('${c.id}')">✅ ACEITAR</button>
-   </div>
-   </div>`;
+ cs.reverse().forEach(c=>{
+  div.innerHTML+=`<div class=card><b>Corrida #${c.id.slice(0,5)}</b> - ${c.status.toUpperCase()}<br>👤 ${c.nome}<br>📍 ${c.origem} → 🏁 ${c.destino}<br><small>⏰ ${c.hora}</small><br><div style=margin-top:8px><button class=btn onclick="aceitar('${c.id}')">✅ ACEITAR</button><button class=btn style=background:white onclick="chegou('${c.id}')">📍 CHEGUEI</button><button class=btn style=background:#333;color:white onclick="finalizar('${c.id}')">🏁 FINALIZAR</button></div><div id="chat-${c.id}" style=margin-top:10px;background:#000;padding:8px;border-radius:8px"></div><div style=display:flex;gap:4px><input id="msg-${c.id}" placeholder="Responder cliente"><button class=btn onclick="enviar('${c.id}')">ENVIAR</button></div></div>`;
+  loadChat(c.id);
  });
 }
-async function aceitar(id){
- await fetch('/api/aceitar/'+id,{method:'POST'});
- alert('Corrida aceita! Chame o cliente no Zap!');
- load();
+async function aceitar(id){await fetch('/api/aceitar/'+id,{method:'POST'}); load();}
+async function chegou(id){await fetch('/api/chegou/'+id,{method:'POST'}); load();}
+async function finalizar(id){await fetch('/api/finalizar/'+id,{method:'POST'}); load();}
+async function enviar(id){
+ const t=document.getElementById('msg-'+id).value; if(!t) return;
+ await fetch('/api/chat/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({de:'motorista',texto:t})});
+ document.getElementById('msg-'+id).value=''; loadChat(id);
 }
-setInterval(load,5000);
-load();
-</script>
-</body>
-</html>
+async function loadChat(id){
+ const r=await fetch('/api/chat/'+id); const msgs=await r.json();
+ let h=''; msgs.forEach(m=>{h+=`<div style="font-size:13px;margin:3px 0"><b>${m.de}:</b> ${m.texto}</div>`});
+ const el=document.getElementById('chat-'+id); if(el) el.innerHTML=h;
+}
+setInterval(load,4000); load();
+</script></body></html>
     """
 
 @app.route('/api/solicitar', methods=['POST'])
-def api_solicitar():
-    data = request.json
-    nova = {
-        "id": str(uuid.uuid4()),
-        "nome": data.get('nome','Cliente'),
-        "origem": data.get('origem'),
-        "destino": data.get('destino'),
-        "zap": data.get('zap',''),
-        "hora": datetime.now().strftime("%d/%m %H:%M"),
-        "status": "pendente"
-    }
+def solicitar():
+    d=request.json
+    nid=str(uuid.uuid4())
+    nova={"id":nid,"nome":d.get('nome'),"origem":d.get('origem'),"destino":d.get('destino'),"hora":datetime.now().strftime("%H:%M"),"status":"procurando"}
     corridas.append(nova)
-    return jsonify({"ok": True, "id": nova["id"]})
+    chats[nid]=[]
+    return jsonify({"ok":True,"id":nid})
 
 @app.route('/api/corridas')
-def api_corridas():
-    return jsonify(corridas)
+def list_corridas(): return jsonify([c for c in corridas if c['status']!='finalizada'])
+
+@app.route('/api/status/<id>')
+def status_corrida(id):
+    for c in corridas:
+        if c['id']==id: return jsonify(c)
+    return jsonify(None)
 
 @app.route('/api/aceitar/<id>', methods=['POST'])
-def api_aceitar(id):
-    global corridas
-    corridas = [c for c in corridas if c['id'] != id]
-    return jsonify({"ok": True})
+def aceitar(id):
+    for c in corridas:
+        if c['id']==id: c['status']='aceita'
+    return jsonify({"ok":True})
+
+@app.route('/api/chegou/<id>', methods=['POST'])
+def chegou(id):
+    for c in corridas:
+        if c['id']==id: c['status']='chegou'
+    return jsonify({"ok":True})
+
+@app.route('/api/finalizar/<id>', methods=['POST'])
+def finalizar(id):
+    for c in corridas:
+        if c['id']==id: c['status']='finalizada'
+    return jsonify({"ok":True})
+
+@app.route('/api/chat/<id>', methods=['GET','POST'])
+def chat(id):
+    if request.method=='POST':
+        data=request.json
+        if id not in chats: chats[id]=[]
+        chats[id].append({"de":data.get('de'),"texto":data.get('texto')})
+        return jsonify({"ok":True})
+    else:
+        return jsonify(chats.get(id,[]))
 
 @app.route('/manifest.json')
 def manifest():
-    return jsonify({
-        "name": "Toindo - Corridas",
-        "short_name": "Toindo",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#000000",
-        "theme_color": "#000000",
-        "icons": [
-            {"src": "https://cdn-icons-png.flaticon.com/512/3774/3774.png", "sizes": "512x512", "type": "image/png", "purpose":"any maskable"}
-        ]
-    })
+    return jsonify({"name":"Toindo","short_name":"Toindo","start_url":"/","display":"standalone","background_color":"#000000","theme_color":"#000000","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/3774/3774.png","sizes":"512x512","type":"image/png"}]})
 
-@app.route('/sw.js')
-def sw():
-    return "self.addEventListener('install', e=>self.skipWaiting());self.addEventListener('activate', e=>self.clients.claim());", 200, {'Content-Type':'application/javascript'}
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+if __name__=='__main__': app.run(host='0.0.0.0',port=10000)
