@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from datetime import datetime
-import uuid, os
+import uuid
 
 app = Flask(__name__)
 CORS(app)
@@ -16,7 +16,7 @@ def home():
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toindo - Moto Táxi Várzea Grande</title>
+<title>Toindo - Moto Taxi VG</title>
 <link rel="manifest" href="/manifest.json">
 <style>
 *{font-family:Arial,sans-serif;box-sizing:border-box}
@@ -26,30 +26,24 @@ body{margin:0;background:#000;color:white}
 .card{background:white;color:black;margin:14px;padding:18px;border-radius:18px}
 input{width:100%;padding:16px;margin:7px 0;border:2px solid #eee;border-radius:12px;font-size:16px;background:#f9f9f9}
 .btn{background:#00FF88;color:black;border:none;padding:16px;border-radius:12px;font-size:17px;width:100%;font-weight:900;margin-top:10px}
-.status{display:none;margin-top:12px;padding:14px;background:#f0fff5;border-radius:12px;border:2px solid #00FF88;text-align:left}
+.status{display:none;margin-top:12px;padding:14px;background:#f0fff5;border-radius:12px;border:2px solid #00FF88}
 .dot{width:10px;height:10px;background:#00FF88;border-radius:50%;display:inline-block;animation:blink 1s infinite}
 @keyframes blink{50%{opacity:0.2}}
-.msg-c{background:#000;color:white;padding:8px 12px;border-radius:12px;margin:4px 0;display:inline-block;max-width:80%}
-.msg-m{background:#00FF88;color:black;padding:8px 12px;border-radius:12px;margin:4px 0;display:inline-block;max-width:80%}
 </style>
 </head>
 <body>
-<div class="header"><div class="logo">🏍️ TO<span>INDO</span><br><small style="font-size:13px;color:#888;font-weight:400">Moto Táxi - Várzea Grande - V4</small></div></div>
-
+<div class="header"><div class="logo">🏍️ TO<span>INDO</span><br><small style="font-size:13px;color:#888;font-weight:400">Moto Taxi - Varzea Grande - V4</small></div></div>
 <div class="card">
 <h3 style="margin:0 0 10px 0">Para onde vamos de moto?</h3>
 <input id="nome" placeholder="👤 Seu nome">
-<input id="origem" placeholder="📍 Origem - Ex: São Simão">
+<input id="origem" placeholder="📍 Origem - Ex: Sao Simao">
 <input id="destino" placeholder="🏁 Destino - Ex: Aeroporto">
 <button class="btn" onclick="solicitar()">SOLICITAR MOTO AGORA</button>
 <div id="status" class="status"></div>
 </div>
-
 <div class="card" style="background:#111;color:white;border:1px solid #222;text-align:center">
-<a href="/motorista" style="color:#00FF88;text-decoration:none;font-weight:bold">👉 ENTRAR COMO MOTOTAXISTA</a><br>
-<small style="color:#666">Sem expor número. Chat anônimo dentro do app.</small>
+<a href="/motorista" style="color:#00FF88;text-decoration:none;font-weight:bold">👉 ENTRAR COMO MOTOTAXISTA</a><br><small style="color:#666">Chat anonimo - sem WhatsApp</small>
 </div>
-
 <script>
 let meuId=null;
 async function solicitar(){
@@ -58,19 +52,17 @@ async function solicitar(){
  const destino=document.getElementById('destino').value;
  if(!nome||!origem||!destino){alert('Preencha tudo!');return;}
  const r=await fetch('/api/solicitar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nome,origem,destino})});
- const d=await r.json();
- meuId=d.id;
- const box=document.getElementById('status');
- box.style.display='block';
- box.innerHTML='<span class=dot></span> <b>Procurando mototaxista...</b><br><small>ID: #'+d.id.slice(0,5)+' - Dados protegidos LGPD</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem pro moto" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+ const d=await r.json(); meuId=d.id;
+ const box=document.getElementById('status'); box.style.display='block';
+ box.innerHTML='<span class=dot></span> <b>Procurando mototaxista...</b><br><small>ID: #'+d.id.slice(0,5)+'</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
  setInterval(verStatus,3000);
 }
 async function verStatus(){
  if(!meuId) return;
  const r=await fetch('/api/status/'+meuId); const c=await r.json(); if(!c) return;
  loadChat();
- if(c.status=='aceita') document.getElementById('status').innerHTML='<span class=dot></span> <b style=color:green>✅ MOTOTAXISTA A CAMINHO!</b><br><small>'+c.origem+' → '+c.destino+'</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Fala com o moto" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
- if(c.status=='chegou') document.getElementById('status').innerHTML='<b style=color:green>🏍️ MOTO CHEGOU NO LOCAL!</b><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+ if(c.status=='aceita') document.getElementById('status').innerHTML='<span class=dot></span> <b style=color:green>✅ MOTOTAXISTA A CAMINHO!</b><br><small>'+c.origem+' -> '+c.destino+'</small><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Fala com o moto" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
+ if(c.status=='chegou') document.getElementById('status').innerHTML='<b style=color:green>🏍️ MOTO CHEGOU!</b><div id="chatArea" style="margin-top:10px"></div><div style="display:flex;gap:5px;margin-top:8px"><input id="msg" placeholder="Mensagem" style="margin:0"><button class=btn style="width:80px;margin:0" onclick="enviar()">ENVIAR</button></div>';
 }
 async function enviar(){
  const texto=document.getElementById('msg').value; if(!texto) return;
@@ -80,7 +72,7 @@ async function enviar(){
 async function loadChat(){
  if(!meuId) return;
  const r=await fetch('/api/chat/'+meuId); const msgs=await r.json();
- let h=''; msgs.forEach(m=>{h+='<div><span class='+(m.de=='cliente'?'msg-c':'msg-m')+'><b>'+m.de+':</b> '+m.texto+'</span></div>'});
+ let h=''; msgs.forEach(m=>{h+='<div><span style="background:'+(m.de=='cliente'?'#000;color:white':'#00FF88;color:black')+';padding:6px 10px;border-radius:10px;margin:3px 0;display:inline-block"><b>'+m.de+':</b> '+m.texto+'</span></div>'});
  const el=document.getElementById('chatArea'); if(el) el.innerHTML=h;
 }
 setInterval(loadChat,2000);
@@ -92,18 +84,16 @@ setInterval(loadChat,2000);
 @app.route('/motorista')
 def motorista():
     return """
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mototaxista Toindo</title>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Moto Toindo</title>
 <style>body{font-family:Arial;margin:0;background:#000;color:white}.header{background:#00FF88;color:black;padding:16px;text-align:center;font-weight:900}.card{background:#1a1a1a;margin:10px;padding:14px;border-radius:12px;border-left:4px solid #00FF88}.btn{background:#00FF88;border:none;padding:10px 14px;border-radius:8px;font-weight:900;margin:3px}input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:6px}</style></head>
-<body><div class="header">🏍️ PAINEL MOTOTAXISTA - TOINDO V4</div><div style="text-align:center;padding:10px"><button class=btn onclick="load()">🔄 ATUALIZAR CORRIDAS</button></div><div id="lista"></div>
+<body><div class="header">🏍️ PAINEL MOTO - TOINDO V4</div><div style="text-align:center;padding:10px"><button class=btn onclick="load()">🔄 ATUALIZAR</button></div><div id="lista"></div>
 <script>
 async function load(){
  const r=await fetch('/api/corridas'); const cs=await r.json();
  const div=document.getElementById('lista');
- if(cs.length==0){div.innerHTML='<p style=text-align:center;color:#666>Nenhuma corrida no momento</p>';return;}
- div.innerHTML='';
- cs.reverse().forEach(c=>{
-  div.innerHTML+=`<div class=card><b>Corrida #${c.id.slice(0,5)}</b> - ${c.status.toUpperCase()}<br>👤 ${c.nome}<br>📍 ${c.origem} → 🏁 ${c.destino}<br><small>⏰ ${c.hora}</small><br><div style=margin-top:8px><button class=btn onclick="aceitar('${c.id}')">✅ ACEITAR</button><button class=btn style=background:white onclick="chegou('${c.id}')">📍 CHEGUEI</button><button class=btn style=background:#333;color:white onclick="finalizar('${c.id}')">🏁 FINALIZAR</button></div><div id="chat-${c.id}" style=margin-top:10px;background:#000;padding:8px;border-radius:8px"></div><div style=display:flex;gap:4px><input id="msg-${c.id}" placeholder="Responder cliente"><button class=btn onclick="enviar('${c.id}')">ENVIAR</button></div></div>`;
-  loadChat(c.id);
+ if(cs.length==0){div.innerHTML='<p style=text-align:center;color:#666>Nenhuma corrida</p>';return;}
+ div.innerHTML=''; cs.reverse().forEach(c=>{
+  div.innerHTML+=`<div class=card><b>#${c.id.slice(0,5)}</b> - ${c.status.toUpperCase()}<br>👤 ${c.nome}<br>📍 ${c.origem} -> 🏁 ${c.destino}<br><small>⏰ ${c.hora}</small><br><div style=margin-top:8px><button class=btn onclick="aceitar('${c.id}')">✅ ACEITAR</button><button class=btn style=background:white onclick="chegou('${c.id}')">📍 CHEGUEI</button><button class=btn style=background:#333;color:white onclick="finalizar('${c.id}')">🏁 FINALIZAR</button></div><div id="chat-${c.id}" style=margin-top:10px;background:#000;padding:8px;border-radius:8px"></div><div style=display:flex;gap:4px><input id="msg-${c.id}" placeholder="Responder"><button class=btn onclick="enviar('${c.id}')">ENVIAR</button></div></div>`; loadChat(c.id);
  });
 }
 async function aceitar(id){await fetch('/api/aceitar/'+id,{method:'POST'}); load();}
@@ -128,8 +118,7 @@ def solicitar_api():
     d=request.json
     nid=str(uuid.uuid4())
     nova={"id":nid,"nome":d.get('nome'),"origem":d.get('origem'),"destino":d.get('destino'),"hora":datetime.now().strftime("%H:%M"),"status":"procurando"}
-    corridas.append(nova)
-    chats[nid]=[]
+    corridas.append(nova); chats[nid]=[]
     return jsonify({"ok":True,"id":nid})
 
 @app.route('/api/corridas')
@@ -170,8 +159,7 @@ def chat(id):
         return jsonify(chats.get(id,[]))
 
 @app.route('/icon.png')
-def icon():
-    return send_from_directory('.', 'icon.png')
+def icon(): return send_from_directory('.', 'icon.png')
 
 @app.route('/manifest.json')
 def manifest():
