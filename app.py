@@ -44,7 +44,7 @@ input{width:100%;padding:14px;margin:6px 0;border:2px solid #eee;border-radius:1
 <input id="cpf" placeholder="CPF">
 <input id="tel" placeholder="WhatsApp (65) 9xxxx-xxxx">
 <input id="email" placeholder="E-mail">
-<input id="endereco" placeholder="Rua, número - Bairro - Várzea Grande">
+<input id="endereco" placeholder="Endereço">
 <input id="motoInfo" placeholder="Moto - Ex: Titan 160 preta - Placa BRA1234">
 <input id="senha" type="password" placeholder="Crie uma senha">
 <button class="btn" onclick="salvar()">CRIAR CONTA E SALVAR NO CELULAR</button>
