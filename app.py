@@ -1,13 +1,22 @@
 from flask import Flask, jsonify, request
-from flask_cors import CORS
+
+
 from datetime import datetime
+
 import uuid
 
+
+
 app = Flask(__name__)
-CORS(app)
+
+
+
 
 corridas = []
+
 usuarios = []
+
+
 
 HTML_HOME = '''
 <!DOCTYPE html>
@@ -15,6 +24,7 @@ HTML_HOME = '''
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="__CSRF_TOKEN__">
 <title>Toindo</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -38,30 +48,15 @@ body{background:#f5f5f5}
 input{width:100%;padding:13px;margin:6px 0;border:2px solid #eee;border-radius:10px;background:#f9f9f9}
 .btn{background:#00FF88;color:#000;border:none;padding:14px;border-radius:10px;width:100%;font-weight:900;margin-top:8px}
 .aguardando{background:#FFF3CD;padding:20px;border-radius:14px;border:2px solid #FFC107;text-align:center;margin:20px 10px}
+
+.auth-shell{max-width:480px;margin:0 auto;min-height:100vh;background:#fff}.auth-hero{background:#080808;color:#fff;padding:30px 22px 26px;border-radius:0 0 26px 26px}.auth-hero .logo{font-size:28px;letter-spacing:1px;color:#00e676}.auth-hero p{color:#ddd;margin-top:12px;line-height:1.5}.auth-content{padding:20px 18px 30px}.eyebrow{color:#666;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin:7px 0}.auth-title{font-size:24px;margin:6px 0 8px}.auth-copy{color:#666;line-height:1.45;margin-bottom:18px;font-size:14px}.auth-choice{display:block;width:100%;text-align:left;padding:17px;margin:10px 0;border:1px solid #e7e7e7;border-radius:14px;background:#fff;cursor:pointer}.auth-choice b{display:block;font-size:16px;margin-bottom:5px}.auth-choice small{color:#666;line-height:1.4}.btn-primary{background:#00e676;color:#07120b;border:none;padding:15px;border-radius:12px;width:100%;font-weight:900;font-size:15px;margin-top:9px;cursor:pointer}.btn-secondary{background:#fff;color:#111;border:1px solid #ddd;padding:14px;border-radius:12px;width:100%;font-weight:800;margin-top:9px;cursor:pointer}.field-label{display:block;font-size:13px;font-weight:700;margin:12px 0 4px}.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.step-dots{display:flex;gap:6px;margin:14px 0 18px}.step-dots span{height:4px;flex:1;border-radius:9px;background:#e8e8e8}.step-dots span.on{background:#00c853}.form-note{font-size:12px;color:#666;line-height:1.45;margin:13px 0}.pill{display:inline-block;background:#eafff1;color:#087a37;padding:6px 10px;border-radius:20px;font-weight:800;font-size:12px}@media(max-width:380px){.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div id="tela-inicio" class="tela active">
-<div class="header-black"><div class="logo">TOINDO</div></div>
-<div class="card" style="text-align:center">
-<h3>Bem-vindo ao Toindo</h3><br>
-<div style="padding:18px;border:2px solid #eee;border-radius:14px;margin:10px 0;cursor:pointer" onclick="irCad('passageiro')"><b>SOU PASSAGEIRO</b></div>
-<div style="padding:18px;border:2px solid #eee;border-radius:14px;margin:10px 0;cursor:pointer" onclick="irCad('motorista')"><b>SOU MOTORISTA</b></div>
-<a href="#" onclick="checkLogin()">Ja tenho cadastro - Entrar</a>
-</div>
-</div>
-<div id="tela-cad" class="tela">
-<div class="header-black"><div class="logo">TOINDO Cadastro</div></div>
-<div class="card">
-<h3 id="titCad">Cadastro</h3>
-<input id="nome" placeholder="Nome completo">
-<input id="tel" placeholder="WhatsApp">
-<input id="endereco" placeholder="Endereco">
-<input id="motoInfo" placeholder="Moto e Placa" style="display:none">
-<button class="btn" onclick="salvar()">CRIAR CONTA</button>
-<button class="btn" style="background:#000;color:#fff" onclick="showTela('tela-inicio')">VOLTAR</button>
-</div>
-</div>
+<div id="tela-inicio" class="tela active"><div class="auth-shell"><div class="auth-hero"><div class="logo">TOINDO</div><p>Sua cidade em movimento.<br>Peça uma moto ou venha pilotar com a gente.</p></div><div class="auth-content"><div class="eyebrow">Bem-vindo</div><h1 class="auth-title">Como você quer continuar?</h1><p class="auth-copy">Entre na sua conta ou crie seu cadastro para começar.</p><button class="btn-primary" onclick="showTela('tela-entrar')">ENTRAR</button><button class="btn-secondary" onclick="showTela('tela-tipo')">CADASTRAR</button></div></div></div>
+<div id="tela-entrar" class="tela"><div class="auth-shell"><div class="auth-hero"><div class="logo">TOINDO</div><p>Acesse sua conta para continuar.</p></div><div class="auth-content"><div class="eyebrow">Acessar</div><h1 class="auth-title">Entrar</h1><p class="auth-copy">Informe o WhatsApp usado no seu cadastro.</p><label class="field-label" for="loginTel">WhatsApp</label><input id="loginTel" type="tel" placeholder="(65) 99999-9999"><button class="btn-primary" onclick="checkLogin(true)">CONTINUAR</button><p class="form-note">Ainda não tem cadastro? <a href="#" onclick="showTela('tela-tipo');return false">Cadastre-se</a></p><button class="btn-secondary" onclick="showTela('tela-inicio')">VOLTAR</button></div></div></div>
+<div id="tela-tipo" class="tela"><div class="auth-shell"><div class="auth-hero"><div class="logo">TOINDO</div><p>Um cadastro simples, do seu jeito.</p></div><div class="auth-content"><div class="eyebrow">Criar cadastro</div><h1 class="auth-title">Escolha como vai usar</h1><p class="auth-copy">Selecione seu perfil para ver os dados necessários.</p><button class="auth-choice" onclick="irCad('passageiro')"><b>Sou passageiro</b><small>Quero solicitar corridas de moto.</small></button><button class="auth-choice" onclick="irCad('motorista')"><b>Quero ser motorista</b><small>Quero pilotar e receber chamadas. Cadastro exclusivo para moto.</small></button><button class="btn-secondary" onclick="showTela('tela-inicio')">VOLTAR</button></div></div></div>
+<div id="tela-cad" class="tela"><div class="auth-shell"><div class="auth-hero"><div class="logo">TOINDO</div><p id="cadSubtitulo">Seu cadastro começa aqui.</p></div><div class="auth-content"><div class="eyebrow" id="cadEtapa">Seus dados</div><h1 class="auth-title" id="titCad">Cadastro</h1><div class="step-dots"><span id="dot1" class="on"></span><span id="dot2"></span></div><div id="cadDadosPessoais"><label class="field-label" for="nome">Nome completo</label><input id="nome" placeholder="Como aparece no seu documento"><div class="field-row"><div><label class="field-label" for="tel">WhatsApp</label><input id="tel" type="tel" placeholder="(65) 99999-9999"></div><div><label class="field-label" for="email">E-mail</label><input id="email" type="email" placeholder="voce@email.com"></div></div><div id="camposMotorista" style="display:none"><label class="field-label" for="cpf">CPF</label><input id="cpf" inputmode="numeric" placeholder="000.000.000-00"><div class="field-row"><div><label class="field-label" for="nascimento">Nascimento</label><input id="nascimento" type="date"></div><div><label class="field-label" for="endereco">Endereço</label><input id="endereco" placeholder="Rua e número"></div></div><p class="form-note"><span class="pill">Cadastro exclusivo para moto</span></p></div><div id="camposPassageiro"><label class="field-label" for="cidade">Cidade</label><input id="cidade" placeholder="Cuiabá ou Várzea Grande"></div><button class="btn-primary" onclick="avancarCadastro()">CONTINUAR</button></div><div id="cadDadosVeiculo" style="display:none"><label class="field-label" for="cnh">Número de registro da CNH</label><input id="cnh" inputmode="numeric" placeholder="Digite o número da CNH"><div class="field-row"><div><label class="field-label" for="categoriaCnh">Categoria da CNH</label><select id="categoriaCnh" style="width:100%;padding:13px;border:2px solid #eee;border-radius:10px;background:#f9f9f9;margin:6px 0"><option value="">Selecione</option><option>A</option><option>AB</option></select></div><div><label class="field-label" for="validadeCnh">Validade da CNH</label><input id="validadeCnh" type="date"></div></div><div class="field-row"><div><label class="field-label" for="motoMarca">Marca e modelo</label><input id="motoMarca" placeholder="Ex.: Honda CG 160"></div><div><label class="field-label" for="motoAno">Ano</label><input id="motoAno" inputmode="numeric" placeholder="2022"></div></div><div class="field-row"><div><label class="field-label" for="motoPlaca">Placa</label><input id="motoPlaca" placeholder="ABC1D23"></div><div><label class="field-label" for="motoCor">Cor</label><input id="motoCor" placeholder="Preta"></div></div><label class="field-label" for="motoRenavam">Renavam (opcional)</label><input id="motoRenavam" inputmode="numeric" placeholder="Número do Renavam"><label style="display:flex;gap:8px;align-items:flex-start;margin:14px 0;font-size:13px"><input id="whatsappOptIn" type="checkbox" style="width:auto;margin:2px 0 0">Aceito receber atualiza&ccedil;&otilde;es do meu cadastro pelo WhatsApp do Toindo.</label><p class="form-note">A equipe vai revisar as informa&ccedil;&otilde;es e pode pedir documentos por um canal seguro. A mensagem de aprova&ccedil;&atilde;o s&oacute; ser&aacute; enviada se voc&ecirc; autorizar o contato pelo WhatsApp.</p><button class="btn-primary" onclick="salvar()">ENVIAR CADASTRO</button><button class="btn-secondary" onclick="voltarEtapaCadastro()">VOLTAR</button></div><button id="btnVoltarTipo" class="btn-secondary" onclick="showTela('tela-tipo')">VOLTAR</button></div></div></div>
 <div id="tela-aguardando" class="tela">
 <div class="header-black"><div class="logo">TOINDO</div></div>
 <div class="aguardando">
@@ -92,31 +87,19 @@ input{width:100%;padding:13px;margin:6px 0;border:2px solid #eee;border-radius:1
 let map, markerOrigem, markerDestino, latOrigem, lngOrigem, latDestino, lngDestino;
 let meuId=null;
 function showTela(id){document.querySelectorAll(".tela").forEach(t=>t.classList.remove("active"));document.getElementById(id).classList.add("active");}
-function irCad(t){
- showTela("tela-cad");
- document.getElementById("titCad").innerText=t=="passageiro"?"Cadastro Passageiro":"Cadastro Motorista";
- document.getElementById("tela-cad").dataset.tipo=t;
- document.getElementById("motoInfo").style.display = t=="motorista"? "block" : "none";
-}
-function checkLogin(){
- const u=localStorage.getItem("toindo_user");
- if(!u){alert("Faca cadastro primeiro");return;}
- const user=JSON.parse(u);
- if(user.tipo=="motorista" && user.status!="APROVADO"){showTela("tela-aguardando");} else {entrarApp(user);}
-}
-function sair(){localStorage.removeItem("toindo_user");showTela("tela-inicio");}
+function irCad(t){showTela("tela-cad");document.getElementById("titCad").innerText=t=="passageiro"?"Cadastro de passageiro":"Cadastro de motorista";document.getElementById("cadSubtitulo").innerText=t=="passageiro"?"Peça sua primeira corrida de moto.":"Só para quem vai pilotar uma moto.";document.getElementById("tela-cad").dataset.tipo=t;document.getElementById("camposMotorista").style.display=t=="motorista"?"block":"none";document.getElementById("camposPassageiro").style.display=t=="motorista"?"none":"block";document.getElementById("cadDadosPessoais").style.display="block";document.getElementById("cadDadosVeiculo").style.display="none";document.getElementById("btnVoltarTipo").style.display="block";document.getElementById("cadEtapa").innerText=t=="motorista"?"Etapa 1 de 2":"Seus dados";document.getElementById("dot2").classList.remove("on");document.getElementById("dot1").classList.add("on");}
+function avancarCadastro(){const tipo=document.getElementById("tela-cad").dataset.tipo;const nome=document.getElementById("nome").value.trim(),tel=document.getElementById("tel").value.trim(),email=document.getElementById("email").value.trim();if(!nome||!tel||!email){alert("Preencha nome completo, WhatsApp e e-mail.");return;}if(tipo=="motorista"){if(!document.getElementById("cpf").value.trim()||!document.getElementById("nascimento").value||!document.getElementById("endereco").value.trim()){alert("Preencha CPF, data de nascimento e endereço.");return;}document.getElementById("cadDadosPessoais").style.display="none";document.getElementById("cadDadosVeiculo").style.display="block";document.getElementById("btnVoltarTipo").style.display="none";document.getElementById("cadEtapa").innerText="Etapa 2 de 2";document.getElementById("dot2").classList.add("on");}else salvar();}
+function voltarEtapaCadastro(){document.getElementById("cadDadosPessoais").style.display="block";document.getElementById("cadDadosVeiculo").style.display="none";document.getElementById("btnVoltarTipo").style.display="block";document.getElementById("cadEtapa").innerText="Etapa 1 de 2";document.getElementById("dot2").classList.remove("on");}
+function checkLogin(){alert("O acesso estará disponível quando a autenticação segura estiver configurada.");}
 async function salvar(){
- const tipo=document.getElementById("tela-cad").dataset.tipo;
- const nome=document.getElementById("nome").value.trim();
- const tel=document.getElementById("tel").value.trim();
- const endereco=document.getElementById("endereco").value.trim();
- const moto=document.getElementById("motoInfo").value.trim();
- if(!nome||!tel||!endereco){alert("Preencha Nome, WhatsApp e Endereco");return;}
- if(tipo=="motorista" &&!moto){alert("Motorista precisa informar Moto e Placa");return;}
- const user={id:Date.now().toString(),nome,tel,endereco,moto,tipo,status:tipo=="motorista"?"PENDENTE":"APROVADO"};
- await fetch("/api/usuarios",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(user)});
- localStorage.setItem("toindo_user",JSON.stringify(user));
- if(tipo=="motorista"){showTela("tela-aguardando");} else {entrarApp(user);}
+ const tipo=document.getElementById("tela-cad").dataset.tipo, nome=document.getElementById("nome").value.trim(), tel=document.getElementById("tel").value.trim(), email=document.getElementById("email").value.trim();
+ const payload={_csrf:document.querySelector('meta[name="csrf-token"]').content,tipo,nome,tel,email};
+ if(tipo==="motorista"){
+  payload.endereco=document.getElementById("endereco").value.trim();payload.cpf=document.getElementById("cpf").value.trim();payload.nascimento=document.getElementById("nascimento").value;payload.cnh=document.getElementById("cnh").value.trim();payload.categoria_cnh=document.getElementById("categoriaCnh").value;payload.validade_cnh=document.getElementById("validadeCnh").value;payload.moto={marca_modelo:document.getElementById("motoMarca").value.trim(),ano:document.getElementById("motoAno").value.trim(),placa:document.getElementById("motoPlaca").value.trim().toUpperCase(),cor:document.getElementById("motoCor").value.trim(),renavam:document.getElementById("motoRenavam").value.trim()};payload.whatsapp_opt_in=document.getElementById("whatsappOptIn").checked;
+ }else payload.endereco=document.getElementById("cidade").value.trim();
+ if(!nome||!tel||!email||!payload.endereco){alert("Preencha os campos obrigatorios.");return;}
+ if(tipo==="motorista"&&(!payload.cpf||!payload.nascimento||!payload.cnh||!payload.categoria_cnh||!payload.validade_cnh||!payload.moto.marca_modelo||!payload.moto.ano||!payload.moto.placa||!payload.moto.cor)){alert("Preencha os dados obrigatorios do motorista e da moto.");return;}
+ try{const response=await fetch("/api/usuarios",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||"Nao foi possivel enviar o cadastro.");if(tipo==="motorista"){document.querySelector("#tela-aguardando p").innerText="Recebemos seu cadastro. A equipe do Toindo vai revisar as informacoes e avisar sobre a decisao.";showTela("tela-aguardando");}else{localStorage.setItem("toindo_user",JSON.stringify({id:result.id,nome,tel,tipo,status:result.status}));entrarApp({nome});}}catch(error){alert(error.message||"Nao foi possivel enviar o cadastro.");}
 }
 function entrarApp(user){
  document.getElementById("nomeUser").innerText=user.nome.split(" ")[0];
@@ -191,76 +174,87 @@ async function verStatus(){
  if(!meuId) return; const r=await fetch("/api/status/"+meuId); const c=await r.json(); if(!c) return;
  if(c.status=="aceita") document.getElementById("statusBox").innerHTML="Motorista "+c.nome_moto+" a caminho! Valor: R$ "+c.valor;
 }
-const saved=localStorage.getItem("toindo_user");
-if(saved){
- const user=JSON.parse(saved);
- if(user.tipo=="motorista" && user.status=="PENDENTE"){showTela("tela-aguardando");}
- else if(user.tipo) {entrarApp(user);}
-}
 </script>
 </body>
 </html>
 '''
 
+
+
 @app.route('/')
+
 def home():
-    return HTML_HOME
+
+    return HTML_HOME.replace("__CSRF_TOKEN__", csrf_token())
+
+
 
 @app.route('/motorista')
+
 def motorista_page():
+
     return "<h2>Painel Motorista</h2><div id=lista></div><script>async function load(){const r=await fetch('/api/corridas');const cs=await r.json();document.getElementById('lista').innerHTML=cs.map(c=>'<div style=border:1px solid #ccc;padding:8px;margin:5px>'+c.nome+' - '+c.destino+' <button onclick=fetch(\"/api/aceitar/'+c.id+'\",{method:\"POST\",headers:{\"Content-Type\":\"application/json\"},body:JSON.stringify({nome_moto:\"Moto\"})}).then(()=>load())>ACEITAR</button></div>').join('');}setInterval(load,3000);load();</script>"
 
-@app.route('/admin')
-def admin_page():
-    return "<h2>Admin - Aprovar Motoristas</h2><div id=lista></div><script>async function load(){const r=await fetch('/api/usuarios');const us=await r.json();document.getElementById('lista').innerHTML=us.map(u=>'<div style=border:1px solid #ccc;padding:8px;margin:5px>'+u.nome+' - '+u.status+' - '+u.tipo+' <button onclick=fetch(\"/api/aprovar/'+u.id+'\",{method:\"POST\"}).then(()=>load())>APROVAR</button></div>').join('');}setInterval(load,3000);load();</script>"
 
-@app.route('/api/usuarios', methods=['GET','POST'])
-def api_usuarios():
-    global usuarios
-    if request.method=='POST':
-        usuarios.append(request.json)
-        return jsonify({"ok":True})
-    return jsonify(usuarios)
 
-@app.route('/api/aprovar/<id>', methods=['POST'])
-def api_aprovar(id):
-    for u in usuarios:
-        if str(u.get('id'))==str(id):
-            u['status']='APROVADO'
-    return jsonify({"ok":True})
+from admin_backend import register_public_routes, csrf_token
+register_public_routes(app)
 
-@app.route('/api/excluir/<id>', methods=['POST'])
-def api_excluir(id):
-    global usuarios
-    usuarios=[u for u in usuarios if str(u.get('id'))!=str(id)]
-    return jsonify({"ok":True})
 
 @app.route('/api/solicitar', methods=['POST'])
+
 def api_solicitar():
+
     d=request.json
+
     nid=str(uuid.uuid4())
+
     corridas.append({"id":nid,"nome":d.get('nome'),"tel":d.get('tel'),"origem":d.get('origem'),"destino":d.get('destino'),"latOrigem":d.get('latOrigem'),"lngOrigem":d.get('lngOrigem'),"latDestino":d.get('latDestino'),"lngDestino":d.get('lngDestino'),"valor":d.get('valor'),"hora":datetime.now().strftime("%H:%M"),"status":"procurando","nome_moto":""})
+
     return jsonify({"ok":True,"id":nid})
 
+
+
 @app.route('/api/corridas')
+
 def api_corridas():
+
     return jsonify([c for c in corridas if c['status']!='finalizada'])
 
+
+
 @app.route('/api/status/<id>')
+
 def api_status(id):
+
     for c in corridas:
+
         if c['id']==id:
+
             return jsonify(c)
+
     return jsonify(None)
 
+
+
 @app.route('/api/aceitar/<id>', methods=['POST'])
+
 def api_aceitar(id):
+
     data=request.json or {}
+
     for c in corridas:
+
         if c['id']==id:
+
             c['status']='aceita'
+
             c['nome_moto']=data.get('nome_moto','Motorista')
+
     return jsonify({"ok":True})
 
+
+
 if __name__=='__main__':
+
     app.run(host='0.0.0.0',port=10000)
