@@ -1,5 +1,5 @@
 import html
-import json
+import json; import logging
 import os
 import secrets
 import sqlite3
@@ -11,7 +11,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from flask import Response, abort, jsonify, redirect, request, session, url_for
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash; logger = logging.getLogger(__name__)
 
 try:
     from cryptography.fernet import Fernet
@@ -147,8 +147,21 @@ def send_whatsapp(applicant, label, detail=""):
     try:
         with urlopen(req,timeout=15) as response: result=json.loads(response.read().decode())
         return "sent",(result.get("messages") or [{}])[0].get("id","")
-    except (HTTPError,URLError,TimeoutError,ValueError):
-        return "failed",""
+    except HTTPError as exc:
+        try:
+            error_data=json.loads(exc.read().decode())
+            api_error=error_data.get("error", {}) if isinstance(error_data, dict) else {}
+        except (UnicodeDecodeError, ValueError):
+            api_error={}
+        logger.warning(
+            "WhatsApp Cloud API rejected a message: http_status=%s api_code=%s api_subcode=%s api_type=%s",
+            exc.code, api_error.get("code"), api_error.get("error_subcode"), api_error.get("type")
+        )
+        return "failed", ""
+    except (URLError,TimeoutError,ValueError) as exc:
+        logger.warning("WhatsApp Cloud API request failed: error_type=%s", type(exc).__name__)
+        return "failed", ""
+        
 
 def update_whatsapp(app_id):
     applicant=get_application(app_id)
