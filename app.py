@@ -1,3 +1,6 @@
+import json
+import os
+
 from flask import Flask, jsonify, request
 
 
@@ -86,6 +89,7 @@ input{width:100%;padding:13px;margin:6px 0;border:2px solid #eee;border-radius:1
 <script>
 let map, markerOrigem, markerDestino, latOrigem, lngOrigem, latDestino, lngDestino;
 let meuId=null;
+const cartoApiKey=__CARTO_API_KEY__;
 function showTela(id){document.querySelectorAll(".tela").forEach(t=>t.classList.remove("active"));document.getElementById(id).classList.add("active");}
 function irCad(t){showTela("tela-cad");document.getElementById("titCad").innerText=t=="passageiro"?"Cadastro de passageiro":"Cadastro de motorista";document.getElementById("cadSubtitulo").innerText=t=="passageiro"?"Peça sua primeira corrida de moto.":"Só para quem vai pilotar uma moto.";document.getElementById("tela-cad").dataset.tipo=t;document.getElementById("camposMotorista").style.display=t=="motorista"?"block":"none";document.getElementById("camposPassageiro").style.display=t=="motorista"?"none":"block";document.getElementById("cadDadosPessoais").style.display="block";document.getElementById("cadDadosVeiculo").style.display="none";document.getElementById("btnVoltarTipo").style.display="block";document.getElementById("cadEtapa").innerText=t=="motorista"?"Etapa 1 de 2":"Seus dados";document.getElementById("dot2").classList.remove("on");document.getElementById("dot1").classList.add("on");}
 function avancarCadastro(){const tipo=document.getElementById("tela-cad").dataset.tipo;const nome=document.getElementById("nome").value.trim(),tel=document.getElementById("tel").value.trim(),email=document.getElementById("email").value.trim();if(!nome||!tel||!email){alert("Preencha nome completo, WhatsApp e e-mail.");return;}if(tipo=="motorista"){if(!document.getElementById("cpf").value.trim()||!document.getElementById("nascimento").value||!document.getElementById("endereco").value.trim()){alert("Preencha CPF, data de nascimento e endereço.");return;}document.getElementById("cadDadosPessoais").style.display="none";document.getElementById("cadDadosVeiculo").style.display="block";document.getElementById("btnVoltarTipo").style.display="none";document.getElementById("cadEtapa").innerText="Etapa 2 de 2";document.getElementById("dot2").classList.add("on");}else salvar();}
@@ -109,7 +113,12 @@ function entrarApp(user){
 function initMap(){
  if(map) {map.invalidateSize(); return;}
  map=L.map("map").setView([-15.6237,-56.1564],15);
- L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map);
+ const tileUrl="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key="+encodeURIComponent(cartoApiKey);
+ L.tileLayer(tileUrl,{
+  attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions/">CARTO</a>',
+  subdomains:"abcd",
+  maxZoom:20
+ }).addTo(map);
  if(navigator.geolocation){
   navigator.geolocation.getCurrentPosition(async p=>{
    latOrigem=p.coords.latitude; lngOrigem=p.coords.longitude;
@@ -185,7 +194,9 @@ async function verStatus(){
 
 def home():
 
-    return HTML_HOME.replace("__CSRF_TOKEN__", csrf_token())
+    return (HTML_HOME
+            .replace("__CSRF_TOKEN__", csrf_token())
+            .replace("__CARTO_API_KEY__", json.dumps(os.environ.get("CARTO_API_KEY", ""))))
 
 
 
